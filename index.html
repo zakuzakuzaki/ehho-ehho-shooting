@@ -15,6 +15,9 @@
             align-items: center;
             min-height: 100vh;
             font-family: Arial, sans-serif;
+            box-sizing: border-box;
+            width: 100%;
+            overflow-x: hidden;
         }
         
         h1 {
@@ -22,6 +25,9 @@
             text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
             margin-bottom: 2rem;
             font-size: 2.5rem;
+            text-align: center;
+            width: 100%;
+            box-sizing: border-box;
         }
         
         .game-selection {
@@ -29,6 +35,10 @@
             gap: 2rem;
             flex-wrap: wrap;
             justify-content: center;
+            padding: 0 1rem;
+            width: 100%;
+            max-width: 1200px;
+            box-sizing: border-box;
         }
         
         .game-card {
@@ -42,6 +52,8 @@
             box-shadow: 0 8px 16px rgba(0,0,0,0.2);
             transition: transform 0.3s, box-shadow 0.3s;
             max-width: 300px;
+            box-sizing: border-box;
+            width: 100%;
         }
         
         .game-card:hover {
@@ -70,6 +82,80 @@
         .owl-emoji {
             font-size: 3rem;
             margin-bottom: 1rem;
+        }
+        
+        @media (max-width: 768px) {
+            body {
+                padding: 1rem;
+                box-sizing: border-box;
+            }
+            
+            h1 {
+                font-size: 2rem;
+                margin-bottom: 1.5rem;
+                text-align: center;
+                padding: 0 1rem;
+                word-wrap: break-word;
+            }
+            
+            .game-selection {
+                flex-direction: column;
+                gap: 1.5rem;
+                padding: 0 0.5rem;
+                width: 100%;
+                max-width: 100%;
+            }
+            
+            .game-card {
+                max-width: 100%;
+                margin: 0;
+                width: 100%;
+                padding: 1.5rem;
+                box-sizing: border-box;
+            }
+            
+            .game-title {
+                font-size: 1.3rem;
+            }
+            
+            .game-description {
+                font-size: 0.9rem;
+                word-wrap: break-word;
+            }
+            
+            .game-features {
+                font-size: 0.8rem;
+                word-wrap: break-word;
+            }
+            
+            .owl-emoji {
+                font-size: 2.5rem;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            body {
+                padding: 0.5rem;
+            }
+            
+            h1 {
+                font-size: 1.8rem;
+                padding: 0 0.5rem;
+            }
+            
+            .game-selection {
+                padding: 0 0.25rem;
+                gap: 1rem;
+            }
+            
+            .game-card {
+                padding: 1rem;
+                margin: 0;
+            }
+            
+            .owl-emoji {
+                font-size: 2rem;
+            }
         }
     </style>
 </head>
