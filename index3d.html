@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>メンフクロウの3D冒険</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(to bottom, #87CEEB, #98FB98);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: Arial, sans-serif;
+            overflow: hidden;
+        }
+        
+        #gameContainer {
+            border: 3px solid #8B4513;
+            border-radius: 10px;
+            background: #000;
+            position: relative;
+        }
+        
+        #gameCanvas {
+            display: block;
+        }
+        
+        #trivia {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 10px;
+            border-radius: 5px;
+            max-width: 300px;
+            font-size: 14px;
+            display: none;
+            z-index: 100;
+        }
+        
+        #controls {
+            position: absolute;
+            bottom: -50px;
+            left: 0;
+            color: #333;
+            font-size: 12px;
+        }
+        
+        #stats {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            color: white;
+            font-size: 14px;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas" width="800" height="600"></canvas>
+        <div id="trivia"></div>
+        <div id="controls">WASD: 移動 | マウス: カメラ | スペース: ジャンプ | X: 攻撃</div>
+        <div id="stats">
+            <div>敵撃破数: <span id="score">0</span></div>
+            <div>体力: <span id="health">100</span></div>
+        </div>
+    </div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="game3d.js"></script>
+</body>
+</html>
