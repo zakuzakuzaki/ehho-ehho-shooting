@@ -67,6 +67,122 @@
         #backButton:hover {
             background: rgba(255, 255, 255, 1);
         }
+        
+        #mobileControls {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: none;
+            gap: 15px;
+            z-index: 200;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        .control-button {
+            background: rgba(255, 255, 255, 0.9);
+            border: 2px solid #8B4513;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            font-size: 24px;
+            font-weight: bold;
+            color: #4B0082;
+            touch-action: manipulation;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+        
+        .control-button:active {
+            background: rgba(255, 255, 255, 0.7);
+            transform: scale(0.95);
+        }
+        
+        .control-button.pressed {
+            background: rgba(139, 69, 19, 0.3);
+        }
+        
+        /* タッチデバイス用の表示制御 */
+        .mobile-device #mobileControls {
+            display: flex !important;
+        }
+        
+        .mobile-device #controls {
+            display: none !important;
+        }
+        
+        @media (max-width: 768px) {
+            body {
+                overflow: hidden;
+            }
+            
+            #gameContainer {
+                border: none;
+                border-radius: 0;
+                position: relative;
+                width: 100vw;
+                height: 100vh;
+            }
+            
+            #gameCanvas {
+                width: 100vw !important;
+                height: 100vh !important;
+                object-fit: contain;
+            }
+            
+            #trivia {
+                max-width: 250px;
+                font-size: 12px;
+            }
+            
+            #backButton {
+                top: 10px;
+                right: 10px;
+                padding: 6px 10px;
+                font-size: 12px;
+            }
+        }
+        
+        /* 横向き時の調整 */
+        @media (max-width: 768px) and (orientation: landscape) {
+            #mobileControls {
+                bottom: 10px;
+                gap: 10px;
+            }
+            
+            .control-button {
+                width: 50px;
+                height: 50px;
+                font-size: 20px;
+            }
+            
+            #trivia {
+                max-width: 200px;
+                font-size: 11px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .control-button {
+                width: 50px;
+                height: 50px;
+                font-size: 20px;
+            }
+            
+            #mobileControls {
+                gap: 10px;
+            }
+            
+            #trivia {
+                max-width: 200px;
+                font-size: 11px;
+                padding: 8px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -77,6 +193,47 @@
         <a href="index.html" id="backButton">← 戻る</a>
     </div>
     
+    <div id="mobileControls">
+        <button class="control-button" id="leftBtn">←</button>
+        <button class="control-button" id="jumpBtn">↑</button>
+        <button class="control-button" id="rightBtn">→</button>
+        <button class="control-button" id="attackBtn">X</button>
+    </div>
+    
+    <script>
+        // モバイルデバイス判定
+        function isMobileDevice() {
+            return /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+                   ('ontouchstart' in window) ||
+                   (navigator.maxTouchPoints > 0) ||
+                   (navigator.msMaxTouchPoints > 0);
+        }
+        
+        // デバイス判定に基づくクラス設定
+        if (isMobileDevice()) {
+            document.body.classList.add('mobile-device');
+        }
+        
+        // 画面向き変更時の処理
+        function handleOrientationChange() {
+            if (isMobileDevice()) {
+                document.body.classList.add('mobile-device');
+                const mobileControls = document.getElementById('mobileControls');
+                const controls = document.getElementById('controls');
+                if (mobileControls && controls) {
+                    mobileControls.style.display = 'flex';
+                    controls.style.display = 'none';
+                }
+            }
+        }
+        
+        // 画面向き変更イベント
+        window.addEventListener('orientationchange', handleOrientationChange);
+        window.addEventListener('resize', handleOrientationChange);
+        
+        // 初期化時にも実行
+        document.addEventListener('DOMContentLoaded', handleOrientationChange);
+    </script>
     <script src="game.js"></script>
 </body>
 </html>

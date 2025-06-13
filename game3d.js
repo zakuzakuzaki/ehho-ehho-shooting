@@ -284,6 +284,158 @@ class BarnOwl3DGame {
         this.canvas.addEventListener('click', () => {
             this.canvas.requestPointerLock();
         });
+        
+        // タッチコントロール
+        this.setupMobileControls();
+    }
+    
+    setupMobileControls() {
+        const jumpBtn = document.getElementById('jumpBtn');
+        const attackBtn = document.getElementById('attackBtn');
+        const joystick = document.getElementById('joystick');
+        const joystickKnob = document.getElementById('joystick-knob');
+        
+        if (!jumpBtn) return; // モバイルコントロールが存在しない場合は終了
+        
+        // ジョイスティック用の状態
+        this.joystick = {
+            active: false,
+            centerX: 0,
+            centerY: 0,
+            knobX: 0,
+            knobY: 0,
+            maxDistance: 40
+        };
+        
+        // ジャンプボタン
+        jumpBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            this.keys[' '] = true;
+            jumpBtn.classList.add('pressed');
+        });
+        jumpBtn.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            this.keys[' '] = false;
+            jumpBtn.classList.remove('pressed');
+        });
+        
+        // 攻撃ボタン
+        attackBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            this.keys['x'] = true;
+            attackBtn.classList.add('pressed');
+        });
+        attackBtn.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            this.keys['x'] = false;
+            attackBtn.classList.remove('pressed');
+        });
+        
+        // ジョイスティック
+        joystick.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const rect = joystick.getBoundingClientRect();
+            this.joystick.centerX = rect.left + rect.width / 2;
+            this.joystick.centerY = rect.top + rect.height / 2;
+            this.joystick.active = true;
+            this.handleJoystickMove(e);
+        });
+        
+        joystick.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            if (this.joystick.active) {
+                this.handleJoystickMove(e);
+            }
+        });
+        
+        joystick.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            this.joystick.active = false;
+            this.keys['w'] = false;
+            this.keys['s'] = false;
+            this.keys['a'] = false;
+            this.keys['d'] = false;
+            
+            // ジョイスティックノブを中央に戻す
+            joystickKnob.style.transform = 'translate(-50%, -50%)';
+        });
+        
+        // タッチによるカメラ制御
+        let lastTouchX = 0;
+        let lastTouchY = 0;
+        let touchStarted = false;
+        
+        this.canvas.addEventListener('touchstart', (e) => {
+            if (e.touches.length === 1) {
+                touchStarted = true;
+                lastTouchX = e.touches[0].clientX;
+                lastTouchY = e.touches[0].clientY;
+            }
+        });
+        
+        this.canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            if (touchStarted && e.touches.length === 1) {
+                const deltaX = e.touches[0].clientX - lastTouchX;
+                const deltaY = e.touches[0].clientY - lastTouchY;
+                
+                this.mouse.x = deltaX * 2;
+                this.mouse.y = deltaY * 2;
+                
+                lastTouchX = e.touches[0].clientX;
+                lastTouchY = e.touches[0].clientY;
+            }
+        });
+        
+        this.canvas.addEventListener('touchend', (e) => {
+            touchStarted = false;
+        });
+        
+        // マウスイベントも追加（デスクトップでのテスト用）
+        [jumpBtn, attackBtn].forEach(btn => {
+            btn.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                const key = btn.id === 'jumpBtn' ? ' ' : 'x';
+                this.keys[key] = true;
+                btn.classList.add('pressed');
+            });
+            
+            btn.addEventListener('mouseup', (e) => {
+                e.preventDefault();
+                const key = btn.id === 'jumpBtn' ? ' ' : 'x';
+                this.keys[key] = false;
+                btn.classList.remove('pressed');
+            });
+        });
+    }
+    
+    handleJoystickMove(e) {
+        const touch = e.touches[0];
+        const deltaX = touch.clientX - this.joystick.centerX;
+        const deltaY = touch.clientY - this.joystick.centerY;
+        const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+        
+        let knobX = deltaX;
+        let knobY = deltaY;
+        
+        if (distance > this.joystick.maxDistance) {
+            knobX = (deltaX / distance) * this.joystick.maxDistance;
+            knobY = (deltaY / distance) * this.joystick.maxDistance;
+        }
+        
+        this.joystick.knobX = knobX;
+        this.joystick.knobY = knobY;
+        
+        // ジョイスティックノブを移動
+        const joystickKnob = document.getElementById('joystick-knob');
+        joystickKnob.style.transform = `translate(calc(-50% + ${knobX}px), calc(-50% + ${knobY}px))`;
+        
+        // 移動キーの状態を更新
+        const threshold = 15;
+        this.keys['w'] = knobY < -threshold;
+        this.keys['s'] = knobY > threshold;
+        this.keys['a'] = knobX < -threshold;
+        this.keys['d'] = knobX > threshold;
     }
     
     update(deltaTime) {

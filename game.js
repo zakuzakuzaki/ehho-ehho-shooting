@@ -152,6 +152,87 @@ class BarnOwlGame {
         document.addEventListener('keyup', (e) => {
             this.keys[e.key] = false;
         });
+        
+        // タッチコントロール
+        this.setupMobileControls();
+    }
+    
+    setupMobileControls() {
+        const leftBtn = document.getElementById('leftBtn');
+        const rightBtn = document.getElementById('rightBtn');
+        const jumpBtn = document.getElementById('jumpBtn');
+        const attackBtn = document.getElementById('attackBtn');
+        
+        if (!leftBtn) return; // モバイルコントロールが存在しない場合は終了
+        
+        // 左移動
+        leftBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            this.keys['ArrowLeft'] = true;
+            leftBtn.classList.add('pressed');
+        });
+        leftBtn.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            this.keys['ArrowLeft'] = false;
+            leftBtn.classList.remove('pressed');
+        });
+        
+        // 右移動
+        rightBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            this.keys['ArrowRight'] = true;
+            rightBtn.classList.add('pressed');
+        });
+        rightBtn.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            this.keys['ArrowRight'] = false;
+            rightBtn.classList.remove('pressed');
+        });
+        
+        // ジャンプ
+        jumpBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            this.keys[' '] = true;
+            jumpBtn.classList.add('pressed');
+        });
+        jumpBtn.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            this.keys[' '] = false;
+            jumpBtn.classList.remove('pressed');
+        });
+        
+        // 攻撃
+        attackBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            this.keys['x'] = true;
+            attackBtn.classList.add('pressed');
+        });
+        attackBtn.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            this.keys['x'] = false;
+            attackBtn.classList.remove('pressed');
+        });
+        
+        // マウスイベントも追加（デスクトップでのテスト用）
+        [leftBtn, rightBtn, jumpBtn, attackBtn].forEach(btn => {
+            btn.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                const key = btn.id === 'leftBtn' ? 'ArrowLeft' :
+                          btn.id === 'rightBtn' ? 'ArrowRight' :
+                          btn.id === 'jumpBtn' ? ' ' : 'x';
+                this.keys[key] = true;
+                btn.classList.add('pressed');
+            });
+            
+            btn.addEventListener('mouseup', (e) => {
+                e.preventDefault();
+                const key = btn.id === 'leftBtn' ? 'ArrowLeft' :
+                          btn.id === 'rightBtn' ? 'ArrowRight' :
+                          btn.id === 'jumpBtn' ? ' ' : 'x';
+                this.keys[key] = false;
+                btn.classList.remove('pressed');
+            });
+        });
     }
     
     update(deltaTime) {
