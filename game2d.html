@@ -47,6 +47,26 @@
             color: #333;
             font-size: 12px;
         }
+        
+        #backButton {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255, 255, 255, 0.9);
+            border: 2px solid #8B4513;
+            border-radius: 5px;
+            padding: 8px 12px;
+            text-decoration: none;
+            color: #4B0082;
+            font-size: 14px;
+            font-weight: bold;
+            transition: background-color 0.3s;
+            z-index: 100;
+        }
+        
+        #backButton:hover {
+            background: rgba(255, 255, 255, 1);
+        }
     </style>
 </head>
 <body>
@@ -54,6 +74,7 @@
         <canvas id="gameCanvas" width="800" height="400"></canvas>
         <div id="trivia"></div>
         <div id="controls">スペースキー: ジャンプ | 矢印キー: 移動 | Xキー: 攻撃</div>
+        <a href="index.html" id="backButton">← 戻る</a>
     </div>
     
     <script src="game.js"></script>
