@@ -23,6 +23,8 @@ class BarnOwlGame {
     this.camera = { x: 0 };
     this.lastTime = 0;
     this.stepSound = 0;
+    this.enemySpawnTimer = 0;
+    this.enemySpawnInterval = 1000;
 
     this.trivia = [
       "F1カーは1秒で約50m進みますって伝えなきゃ！",
@@ -148,6 +150,73 @@ class BarnOwlGame {
         alive: true,
       });
     }
+  }
+
+  spawnEnemy() {
+    const spawnType = Math.random();
+    let enemy;
+
+    if (spawnType < 0.3) {
+      // 右から来る敵 (30%)
+      enemy = {
+        x: this.camera.x + this.canvas.width + Math.random() * 200,
+        y: 280,
+        width: 40,
+        height: 40,
+        speedX: -(1 + Math.random() * 2),
+        speedY: 0,
+        type: Math.random() > 0.5 ? "snake" : "spider",
+        health: 1,
+        alive: true,
+        direction: "right",
+      };
+    } else if (spawnType < 0.6) {
+      // 左から来る敵 (30%)
+      enemy = {
+        x: this.camera.x - Math.random() * 200 - 50,
+        y: 280,
+        width: 40,
+        height: 40,
+        speedX: 1 + Math.random() * 2,
+        speedY: 0,
+        type: Math.random() > 0.5 ? "snake" : "spider",
+        health: 1,
+        alive: true,
+        direction: "left",
+      };
+    } else if (spawnType < 0.8) {
+      // 上から落ちてくる敵 (20%)
+      enemy = {
+        x: this.camera.x + Math.random() * this.canvas.width,
+        y: -50,
+        width: 40,
+        height: 40,
+        speedX: (Math.random() - 0.5) * 2,
+        speedY: 2 + Math.random() * 2,
+        type: "spider",
+        health: 1,
+        alive: true,
+        direction: "top",
+      };
+      console.log("上から敵をスポーン:", enemy.x, enemy.y);
+    } else {
+      // 下から上がってくる敵 (20%)
+      enemy = {
+        x: this.camera.x + Math.random() * this.canvas.width,
+        y: this.canvas.height + 50,
+        width: 40,
+        height: 40,
+        speedX: (Math.random() - 0.5) * 1,
+        speedY: -(1 + Math.random() * 2),
+        type: "spider",
+        health: 1,
+        alive: true,
+        direction: "bottom",
+      };
+      console.log("下から敵をスポーン:", enemy.x, enemy.y);
+    }
+
+    this.enemies.push(enemy);
   }
 
   attack() {
@@ -396,18 +465,64 @@ class BarnOwlGame {
     for (let enemy of this.enemies) {
       if (!enemy.alive) continue;
 
-      if (enemy.type === "snake") {
-        enemy.x += Math.sin(Date.now() * 0.003 + enemy.x * 0.01) * enemy.speed;
-      } else {
-        enemy.x -= enemy.speed;
-        if (enemy.x < this.camera.x - 100) {
-          enemy.x = this.camera.x + this.canvas.width + Math.random() * 200;
+      if (enemy.direction === "right") {
+        if (enemy.type === "snake") {
+          enemy.x +=
+            enemy.speedX + Math.sin(Date.now() * 0.003 + enemy.x * 0.01) * 0.5;
+        } else {
+          enemy.x += enemy.speedX;
         }
+      } else if (enemy.direction === "left") {
+        if (enemy.type === "snake") {
+          enemy.x +=
+            enemy.speedX + Math.sin(Date.now() * 0.003 + enemy.x * 0.01) * 0.5;
+        } else {
+          enemy.x += enemy.speedX;
+        }
+      } else if (enemy.direction === "top") {
+        enemy.x += enemy.speedX;
+        enemy.y += enemy.speedY;
+
+        // 地面に着いたら横移動に変更
+        if (enemy.y >= 280) {
+          enemy.y = 280;
+          enemy.speedY = 0;
+          enemy.speedX = (Math.random() > 0.5 ? 1 : -1) * (1 + Math.random());
+          enemy.direction = "ground";
+        }
+      } else if (enemy.direction === "bottom") {
+        enemy.x += enemy.speedX;
+        enemy.y += enemy.speedY;
+
+        // 地面を通り過ぎたら横移動に変更
+        if (enemy.y <= 280) {
+          enemy.y = 280;
+          enemy.speedY = 0;
+          enemy.speedX = (Math.random() > 0.5 ? 1 : -1) * (1 + Math.random());
+          enemy.direction = "ground";
+        }
+      } else if (enemy.direction === "ground") {
+        enemy.x += enemy.speedX;
       }
     }
 
     this.checkCollisions();
     this.checkProjectileCollisions();
+
+    this.enemySpawnTimer += deltaTime;
+    if (this.enemySpawnTimer > this.enemySpawnInterval) {
+      this.spawnEnemy();
+      this.enemySpawnTimer = 0;
+    }
+
+    this.enemies = this.enemies.filter(
+      (enemy) =>
+        enemy.alive &&
+        enemy.x > this.camera.x - 200 &&
+        enemy.x < this.camera.x + this.canvas.width + 200 &&
+        enemy.y > -100 &&
+        enemy.y < this.canvas.height + 100
+    );
 
     this.triviaTimer += deltaTime;
     if (this.triviaTimer > 5000) {
@@ -590,10 +705,21 @@ class BarnOwlGame {
     this.ctx.fillStyle = "#90EE90";
     this.ctx.fillRect(0, this.canvas.height - 75, this.canvas.width, 10);
 
-    for (let i = 0; i < 10; i++) {
-      const treeX = i * 150 + 200 - this.camera.x;
-      if (treeX > -50 && treeX < this.canvas.width + 50) {
-        this.drawTree(treeX, this.canvas.height - 150);
+    // 木の描画を改善
+    const treeSpacing = 150;
+    const treeOffset = 200;
+
+    // カメラの位置に基づいて木の開始位置と終了位置を計算
+    const startX =
+      Math.floor((this.camera.x - treeOffset) / treeSpacing) * treeSpacing +
+      treeOffset;
+    const endX = startX + this.canvas.width + treeSpacing * 2;
+
+    // 木を描画
+    for (let x = startX; x <= endX; x += treeSpacing) {
+      const screenX = x - this.camera.x;
+      if (screenX > -100 && screenX < this.canvas.width + 100) {
+        this.drawTree(screenX, this.canvas.height - 150);
       }
     }
   }
