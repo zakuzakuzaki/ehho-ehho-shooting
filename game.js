@@ -17,6 +17,7 @@ class BarnOwlGame {
 
     this.enemies = [];
     this.projectiles = [];
+    this.triviaBalls = [];
     this.gameState = "playing";
     this.generateEnemies();
 
@@ -25,6 +26,11 @@ class BarnOwlGame {
     this.stepSound = 0;
     this.enemySpawnTimer = 0;
     this.enemySpawnInterval = 1000;
+    this.triviaBallSpawnTimer = 0;
+    this.triviaBallSpawnInterval = 2000;
+    this.score = 0;
+    this.isShowingTrivia = false;
+    this.speechBubbleTimer = 0;
 
     this.trivia = [
       "F1カーは1秒で約50m進みますって伝えなきゃ！",
@@ -219,6 +225,18 @@ class BarnOwlGame {
     this.enemies.push(enemy);
   }
 
+  spawnTriviaBall() {
+    this.triviaBalls.push({
+      x: this.camera.x + this.canvas.width + Math.random() * 300,
+      y: 290,
+      width: 30,
+      height: 30,
+      speedX: -2,
+      bounceY: Math.random() * 2 - 1,
+      alive: true,
+    });
+  }
+
   attack() {
     this.projectiles.push({
       x: this.owl.x + this.owl.width,
@@ -269,6 +287,26 @@ class BarnOwlGame {
     }
   }
 
+  checkTriviaBallCollisions() {
+    for (let i = this.triviaBalls.length - 1; i >= 0; i--) {
+      let ball = this.triviaBalls[i];
+      if (!ball.alive) continue;
+
+      if (
+        this.owl.x < ball.x + ball.width &&
+        this.owl.x + this.owl.width > ball.x &&
+        this.owl.y < ball.y + ball.height &&
+        this.owl.y + this.owl.height > ball.y
+      ) {
+        ball.alive = false;
+        this.triviaBalls.splice(i, 1);
+        this.score++;
+        this.showTrivia();
+        console.log("トリビアボールを取得！スコア:", this.score);
+      }
+    }
+  }
+
   checkCollisions() {
     if (this.gameState !== "playing") return;
 
@@ -289,7 +327,7 @@ class BarnOwlGame {
   }
 
   showGameOver() {
-    this.triviaElement.textContent = "ゲームオーバー！スペースキーでリスタート";
+    this.triviaElement.textContent = `ゲームオーバー！ 最終スコア: ${this.score} スペースキーでリスタート`;
     this.triviaElement.style.display = "block";
     this.triviaElement.style.background = "rgba(255, 0, 0, 0.9)";
     this.triviaElement.style.color = "white";
@@ -303,7 +341,11 @@ class BarnOwlGame {
     this.camera.x = 0;
     this.enemies = [];
     this.projectiles = [];
+    this.triviaBalls = [];
     this.generateEnemies();
+    this.score = 0;
+    this.isShowingTrivia = false;
+    this.speechBubbleTimer = 0;
     this.triviaElement.style.display = "none";
     this.triviaElement.style.background = "rgba(255, 255, 255, 0.9)";
     this.triviaElement.style.color = "black";
@@ -460,6 +502,8 @@ class BarnOwlGame {
     this.camera.x = this.owl.x - 300;
     if (this.camera.x < 0) this.camera.x = 0;
 
+    // スコアはトリビアボール取得数で計算（進行距離は使わない）
+
     this.updateProjectiles(deltaTime);
 
     for (let enemy of this.enemies) {
@@ -515,6 +559,12 @@ class BarnOwlGame {
       this.enemySpawnTimer = 0;
     }
 
+    this.triviaBallSpawnTimer += deltaTime;
+    if (this.triviaBallSpawnTimer > this.triviaBallSpawnInterval) {
+      this.spawnTriviaBall();
+      this.triviaBallSpawnTimer = 0;
+    }
+
     this.enemies = this.enemies.filter(
       (enemy) =>
         enemy.alive &&
@@ -524,11 +574,30 @@ class BarnOwlGame {
         enemy.y < this.canvas.height + 100
     );
 
-    this.triviaTimer += deltaTime;
-    if (this.triviaTimer > 5000) {
-      this.showTrivia();
-      this.triviaTimer = 0;
+    // トリビアボールの更新
+    for (let ball of this.triviaBalls) {
+      if (!ball.alive) continue;
+      ball.x += ball.speedX;
+      ball.y += ball.bounceY;
+
+      // 軽いバウンス効果
+      if (ball.y > 290 || ball.y < 250) {
+        ball.bounceY *= -0.7;
+      }
     }
+
+    this.triviaBalls = this.triviaBalls.filter(
+      (ball) =>
+        ball.alive &&
+        ball.x > this.camera.x - 100 &&
+        ball.x < this.camera.x + this.canvas.width + 100
+    );
+
+    this.checkTriviaBallCollisions();
+
+    this.speechBubbleTimer += deltaTime;
+
+    // 自動トリビア表示は削除（トリビアボール取得時のみ表示）
   }
 
   playStepSound() {
@@ -536,11 +605,13 @@ class BarnOwlGame {
   }
 
   showTrivia() {
+    this.isShowingTrivia = true;
     this.triviaElement.textContent = this.trivia[this.currentTrivia];
     this.triviaElement.style.display = "block";
 
     setTimeout(() => {
       this.triviaElement.style.display = "none";
+      this.isShowingTrivia = false;
     }, 3000);
 
     this.currentTrivia = (this.currentTrivia + 1) % this.trivia.length;
@@ -557,55 +628,175 @@ class BarnOwlGame {
       this.ctx.translate(0, Math.sin(this.owl.walkCycle * 8) * 2);
     }
 
-    this.drawBicycle();
-
+    // 体（胴体）
     this.ctx.fillStyle = "#F5F5DC";
     this.ctx.beginPath();
-    this.ctx.ellipse(0, -20, 20, 25, 0, 0, Math.PI * 2);
+    this.ctx.ellipse(0, 5, 18, 20, 0, 0, Math.PI * 2);
     this.ctx.fill();
+
+    // 頭
+    this.ctx.fillStyle = "#F5F5DC";
+    this.ctx.beginPath();
+    this.ctx.ellipse(0, -20, 15, 18, 0, 0, Math.PI * 2);
+    this.ctx.fill();
+
+    this.drawArms();
+    this.drawLegs();
 
     this.ctx.fillStyle = "#8B4513";
     this.ctx.beginPath();
-    this.ctx.ellipse(-6, -30, 6, 8, 0, 0, Math.PI * 2);
-    this.ctx.ellipse(6, -30, 6, 8, 0, 0, Math.PI * 2);
+    this.ctx.ellipse(-6, -25, 6, 8, 0, 0, Math.PI * 2);
+    this.ctx.ellipse(6, -25, 6, 8, 0, 0, Math.PI * 2);
     this.ctx.fill();
 
     this.ctx.fillStyle = "#000";
     this.ctx.beginPath();
-    this.ctx.ellipse(-6, -30, 2, 2, 0, 0, Math.PI * 2);
-    this.ctx.ellipse(6, -30, 2, 2, 0, 0, Math.PI * 2);
+    this.ctx.ellipse(-6, -25, 2, 2, 0, 0, Math.PI * 2);
+    this.ctx.ellipse(6, -25, 2, 2, 0, 0, Math.PI * 2);
     this.ctx.fill();
 
     this.ctx.fillStyle = "#FF8C00";
     this.ctx.beginPath();
-    this.ctx.moveTo(0, -20);
-    this.ctx.lineTo(-3, -15);
-    this.ctx.lineTo(3, -15);
+    this.ctx.moveTo(0, -17);
+    this.ctx.lineTo(-3, -12);
+    this.ctx.lineTo(3, -12);
     this.ctx.closePath();
     this.ctx.fill();
 
     this.ctx.restore();
+
+    // トリビア非表示中の吹き出し表示
+    if (!this.isShowingTrivia && this.speechBubbleTimer > 500) {
+      // 歩行時の上下揺れを計算
+      let bounceY = 0;
+      if (this.keys["ArrowRight"] || this.keys["d"]) {
+        bounceY = Math.sin(this.owl.walkCycle * 8) * 2;
+      }
+      this.drawSpeechBubble(owlX, owlY + bounceY);
+      if (this.speechBubbleTimer > 2500) {
+        this.speechBubbleTimer = 0;
+      }
+    }
   }
 
-  drawBicycle() {
-    this.ctx.strokeStyle = "#444";
-    this.ctx.lineWidth = 3;
+  drawArms() {
+    const isWalking = this.keys["ArrowRight"] || this.keys["d"] || this.keys["ArrowLeft"] || this.keys["a"];
+    
+    if (isWalking) {
+      // 歩行時の腕のアニメーション
+      const armCycle = this.owl.walkCycle * 10;
+      const leftArmAngle = Math.sin(armCycle + Math.PI) * 0.4;
+      const rightArmAngle = Math.sin(armCycle) * 0.4;
+      
+      this.ctx.strokeStyle = "#F5F5DC";
+      this.ctx.lineWidth = 5;
+      this.ctx.lineCap = "round";
+      
+      // 左腕
+      this.ctx.save();
+      this.ctx.rotate(leftArmAngle);
+      this.ctx.beginPath();
+      this.ctx.moveTo(-15, 0);
+      this.ctx.lineTo(-25, 15);
+      this.ctx.stroke();
+      this.ctx.restore();
+      
+      // 右腕
+      this.ctx.save();
+      this.ctx.rotate(rightArmAngle);
+      this.ctx.beginPath();
+      this.ctx.moveTo(15, 0);
+      this.ctx.lineTo(25, 15);
+      this.ctx.stroke();
+      this.ctx.restore();
+    } else {
+      // 静止時の腕
+      this.ctx.strokeStyle = "#F5F5DC";
+      this.ctx.lineWidth = 5;
+      this.ctx.lineCap = "round";
+      
+      // 左腕
+      this.ctx.beginPath();
+      this.ctx.moveTo(-15, 0);
+      this.ctx.lineTo(-22, 15);
+      this.ctx.stroke();
+      
+      // 右腕
+      this.ctx.beginPath();
+      this.ctx.moveTo(15, 0);
+      this.ctx.lineTo(22, 15);
+      this.ctx.stroke();
+    }
+  }
 
-    this.ctx.beginPath();
-    this.ctx.arc(-15, 10, 12, 0, Math.PI * 2);
-    this.ctx.stroke();
-
-    this.ctx.beginPath();
-    this.ctx.arc(15, 10, 12, 0, Math.PI * 2);
-    this.ctx.stroke();
-
-    this.ctx.beginPath();
-    this.ctx.moveTo(-15, 10);
-    this.ctx.lineTo(0, -5);
-    this.ctx.lineTo(15, 10);
-    this.ctx.moveTo(0, -5);
-    this.ctx.lineTo(0, 5);
-    this.ctx.stroke();
+  drawLegs() {
+    const isWalking = this.keys["ArrowRight"] || this.keys["d"] || this.keys["ArrowLeft"] || this.keys["a"];
+    
+    if (isWalking) {
+      // 歩行時の足のアニメーション
+      const legCycle = this.owl.walkCycle * 12;
+      const leftLegAngle = Math.sin(legCycle) * 0.5;
+      const rightLegAngle = Math.sin(legCycle + Math.PI) * 0.5;
+      
+      this.ctx.strokeStyle = "#F5F5DC";
+      this.ctx.lineWidth = 12;
+      this.ctx.lineCap = "round";
+      
+      // 左足（太ももから）
+      this.ctx.save();
+      this.ctx.rotate(leftLegAngle);
+      this.ctx.beginPath();
+      this.ctx.moveTo(-10, 20);
+      this.ctx.lineTo(-10, 45);
+      this.ctx.stroke();
+      this.ctx.restore();
+      
+      // 右足（太ももから）
+      this.ctx.save();
+      this.ctx.rotate(rightLegAngle);
+      this.ctx.beginPath();
+      this.ctx.moveTo(10, 20);
+      this.ctx.lineTo(10, 45);
+      this.ctx.stroke();
+      this.ctx.restore();
+      
+      // 足先
+      this.ctx.fillStyle = "#F5F5DC";
+      this.ctx.beginPath();
+      this.ctx.ellipse(-10 + Math.sin(leftLegAngle) * 5, 45, 8, 4, 0, 0, Math.PI * 2);
+      this.ctx.fill();
+      
+      this.ctx.beginPath();
+      this.ctx.ellipse(10 + Math.sin(rightLegAngle) * 5, 45, 8, 4, 0, 0, Math.PI * 2);
+      this.ctx.fill();
+    } else {
+      // 静止時の足
+      this.ctx.strokeStyle = "#F5F5DC";
+      this.ctx.lineWidth = 12;
+      this.ctx.lineCap = "round";
+      
+      // 左足
+      this.ctx.beginPath();
+      this.ctx.moveTo(-10, 20);
+      this.ctx.lineTo(-10, 45);
+      this.ctx.stroke();
+      
+      // 右足
+      this.ctx.beginPath();
+      this.ctx.moveTo(10, 20);
+      this.ctx.lineTo(10, 45);
+      this.ctx.stroke();
+      
+      // 足先
+      this.ctx.fillStyle = "#F5F5DC";
+      this.ctx.beginPath();
+      this.ctx.ellipse(-10, 45, 8, 4, 0, 0, Math.PI * 2);
+      this.ctx.fill();
+      
+      this.ctx.beginPath();
+      this.ctx.ellipse(10, 45, 8, 4, 0, 0, Math.PI * 2);
+      this.ctx.fill();
+    }
   }
 
   drawProjectiles() {
@@ -637,6 +828,7 @@ class BarnOwlGame {
       }
     }
   }
+
 
   drawEnemies() {
     for (let enemy of this.enemies) {
@@ -734,12 +926,134 @@ class BarnOwlGame {
     this.ctx.fill();
   }
 
+  drawSpeechBubble(owlX, owlY) {
+    this.ctx.save();
+
+    // 吹き出しの背景
+    this.ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
+    this.ctx.strokeStyle = "#000";
+    this.ctx.lineWidth = 2;
+
+    const bubbleX = owlX + 40;
+    const bubbleY = owlY - 60;
+    const bubbleWidth = 80;
+    const bubbleHeight = 30;
+
+    // 吹き出し本体
+    this.ctx.beginPath();
+    this.ctx.roundRect(bubbleX, bubbleY, bubbleWidth, bubbleHeight, 10);
+    this.ctx.fill();
+    this.ctx.stroke();
+
+    // 吹き出しの尻尾
+    this.ctx.beginPath();
+    this.ctx.moveTo(bubbleX + 20, bubbleY + bubbleHeight);
+    this.ctx.lineTo(bubbleX + 10, bubbleY + bubbleHeight + 10);
+    this.ctx.lineTo(bubbleX + 30, bubbleY + bubbleHeight);
+    this.ctx.closePath();
+    this.ctx.fill();
+    this.ctx.stroke();
+
+    // テキスト
+    this.ctx.fillStyle = "#000";
+    this.ctx.font = "14px Arial";
+    this.ctx.textAlign = "center";
+    this.ctx.fillText("エッホ", bubbleX + bubbleWidth / 2, bubbleY + 20);
+
+    this.ctx.restore();
+  }
+
+  drawTriviaBalls() {
+    for (let ball of this.triviaBalls) {
+      if (!ball.alive) continue;
+
+      const ballX = ball.x - this.camera.x;
+      if (ballX > -50 && ballX < this.canvas.width + 50) {
+        this.ctx.save();
+
+        // ボールの影
+        this.ctx.fillStyle = "rgba(0, 0, 0, 0.3)";
+        this.ctx.beginPath();
+        this.ctx.ellipse(
+          ballX + ball.width / 2,
+          300,
+          ball.width / 2 - 2,
+          5,
+          0,
+          0,
+          Math.PI * 2
+        );
+        this.ctx.fill();
+
+        // ボール本体（グラデーション）
+        const gradient = this.ctx.createRadialGradient(
+          ballX + ball.width / 3,
+          ball.y + ball.height / 3,
+          0,
+          ballX + ball.width / 2,
+          ball.y + ball.height / 2,
+          ball.width / 2
+        );
+        gradient.addColorStop(0, "#FFD700");
+        gradient.addColorStop(1, "#FFA500");
+
+        this.ctx.fillStyle = gradient;
+        this.ctx.beginPath();
+        this.ctx.ellipse(
+          ballX + ball.width / 2,
+          ball.y + ball.height / 2,
+          ball.width / 2,
+          ball.height / 2,
+          0,
+          0,
+          Math.PI * 2
+        );
+        this.ctx.fill();
+
+        // ボールの枠線
+        this.ctx.strokeStyle = "#FF8C00";
+        this.ctx.lineWidth = 2;
+        this.ctx.stroke();
+
+        // ボールの光沢
+        this.ctx.fillStyle = "rgba(255, 255, 255, 0.6)";
+        this.ctx.beginPath();
+        this.ctx.ellipse(
+          ballX + ball.width / 3,
+          ball.y + ball.height / 3,
+          4,
+          6,
+          0,
+          0,
+          Math.PI * 2
+        );
+        this.ctx.fill();
+
+        this.ctx.restore();
+      }
+    }
+  }
+
+  drawScore() {
+    this.ctx.save();
+    this.ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
+    this.ctx.fillRect(this.canvas.width - 220, 10, 200, 40);
+
+    this.ctx.fillStyle = "white";
+    this.ctx.font = "20px Arial";
+    this.ctx.textAlign = "left";
+    this.ctx.fillText("トリビア: " + this.score, this.canvas.width - 210, 35);
+    this.ctx.restore();
+  }
+
   render() {
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     this.drawBackground();
     this.drawEnemies();
+    this.drawTriviaBalls();
     this.drawProjectiles();
     this.drawOwl();
+    this.drawScore();
   }
 
   gameLoop(currentTime = 0) {
